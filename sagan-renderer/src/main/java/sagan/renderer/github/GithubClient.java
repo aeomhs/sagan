@@ -41,18 +41,29 @@ public class GithubClient {
 
 	private static final Logger logger = LoggerFactory.getLogger(GithubClient.class);
 
+	/**
+	 * spring org fetch link : https://api.github.com/orgs/spring-guides/repos?per_page=100
+	 * local user fetch link : https://api.github.com/users/aeomhs/repos?per_page=100
+	 */
 	private static final String REPOS_LIST_PATH = "/orgs/%s/repos?per_page=100";
+	private static final String USER_REPOS_LIST_PATH = "/%s/%s/repos?per_page=100";
 
+	/**
+	 * spring org fetch link : https://api.github.com/repos/spring-guides/gs-testing-web
+	 * local user fetch link : https://api.github.com/repos/aeomhs/gs-local-env-test
+	 */
 	private static final String REPO_INFO_PATH = "/repos/{organization}/{repositoryName}";
+	private static final String USER_REPO_INFO_PATH = "/repos/{userName}/{repositoryName}";
 
 	private static final String REPO_ZIPBALL_PATH = REPO_INFO_PATH + "/zipball";
+	private static final String USER_REPO_ZIPBALL_PATH = USER_REPO_INFO_PATH + "/zipball";
 
 	private static final MediaType GITHUB_PREVIEW_TYPE = MediaType.parseMediaType("application/vnd.github.mercy-preview+json");
 
 	private final RestTemplate restTemplate;
 
 	public GithubClient(RestTemplateBuilder restTemplateBuilder,
-			RendererProperties properties) {
+						RendererProperties properties) {
 		restTemplateBuilder = restTemplateBuilder
 				.rootUri(API_URL_BASE)
 				.additionalInterceptors(new GithubAcceptInterceptor());
@@ -84,6 +95,18 @@ public class GithubClient {
 		}
 	}
 
+	// TODO Refactoring duplicate code with fetchOrgRepositories (Upper Method)
+	public byte[] downloadUsersRepositoryAsZipball(String userName, String repository) {
+		try {
+			byte[] response = this.restTemplate.getForObject(USER_REPO_ZIPBALL_PATH,
+					byte[].class, userName, repository);
+			return response;
+		}
+		catch (HttpClientErrorException ex) {
+			throw new GithubResourceNotFoundException(userName, ex);
+		}
+	}
+
 	/**
 	 * Lists all the repositories available under the given organization
 	 * @param organization the github organization name
@@ -95,6 +118,19 @@ public class GithubClient {
 		while (nextPage.isPresent()) {
 			ResponseEntity<Repository[]> page = this.restTemplate
 					.getForEntity(nextPage.get(), Repository[].class, organization);
+			repositories.addAll(Arrays.asList(page.getBody()));
+			nextPage = findNextPageLink(page);
+		}
+		return repositories;
+	}
+
+	// TODO Refactoring duplicate code with fetchOrgRepositories (Upper Method)
+	public List<Repository> fetchUsersRepositories(String types, String userName) {
+		List<Repository> repositories = new ArrayList<>();
+		Optional<String> nextPage = Optional.of(String.format(USER_REPOS_LIST_PATH, types, userName));
+		while (nextPage.isPresent()) {
+			ResponseEntity<Repository[]> page = this.restTemplate
+					.getForEntity(nextPage.get(), Repository[].class, types, userName);
 			repositories.addAll(Arrays.asList(page.getBody()));
 			nextPage = findNextPageLink(page);
 		}
@@ -114,6 +150,17 @@ public class GithubClient {
 		}
 		catch (HttpClientErrorException ex) {
 			throw new GithubResourceNotFoundException(organization, repositoryName, ex);
+		}
+	}
+
+	// TODO Refactoring duplicate code with fetchOrgRepositories (Upper Method)
+	public Repository fetchUserRepository(String userName, String repositoryName) {
+		try {
+			return this.restTemplate
+					.getForObject(USER_REPO_INFO_PATH, Repository.class, userName, repositoryName);
+		}
+		catch (HttpClientErrorException ex) {
+			throw new GithubResourceNotFoundException(userName, repositoryName, ex);
 		}
 	}
 

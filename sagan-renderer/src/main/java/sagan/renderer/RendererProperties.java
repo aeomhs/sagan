@@ -57,5 +57,25 @@ public class RendererProperties {
 		public void setOrganization(String organization) {
 			this.organization = organization;
 		}
+
+		private Owner owner = new Owner();
+
+		public Owner getOwner() { return this.owner; }
+
+		public static class Owner {
+
+			private String name;
+
+			private String type;
+
+			public String getName() { return name; }
+
+			public String getType() { return type; }
+
+			public void setName(String name) { this.name = name; }
+
+			public void setType(String type) { this.type = type; }
+
+		}
 	}
 }

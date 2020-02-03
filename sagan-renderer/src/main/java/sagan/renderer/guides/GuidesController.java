@@ -49,12 +49,20 @@ public class GuidesController {
 
 	@GetMapping("/")
 	public Resources<GuideResource> listGuides() {
+		// org repo
 		List<GuideResource> guideResources = this.guideAssembler
 				.toResources(this.githubClient.fetchOrgRepositories(properties.getGuides().getOrganization()))
 				.stream().filter(guide -> !guide.getType().equals(GuideType.UNKNOWN))
 				.collect(Collectors.toList());
-		Resources<GuideResource> resources = new Resources<>(guideResources);
+		// TODO Refactoring duplicate code & null check
+		// user repo
+		List<GuideResource> userGuideResources = this.guideAssembler
+				.toResources(this.githubClient.fetchUsersRepositories(properties.getGuides().getOwner().getType(), properties.getGuides().getOwner().getName()))
+				.stream().filter(guide -> !guide.getType().equals(GuideType.UNKNOWN))
+				.collect(Collectors.toList());
+		guideResources.addAll(userGuideResources);
 
+		Resources<GuideResource> resources = new Resources<>(guideResources);
 		for (GuideType type : GuideType.values()) {
 			if (!GuideType.UNKNOWN.equals(type)) {
 				resources.add(linkTo(methodOn(GuidesController.class).showGuide(type.getSlug(), null))
@@ -70,12 +78,26 @@ public class GuidesController {
 		if (GuideType.UNKNOWN.equals(guideType)) {
 			return ResponseEntity.notFound().build();
 		}
-		Repository repository = this.githubClient.fetchOrgRepository(properties.getGuides().getOrganization(),
-				guideType.getPrefix() + guide);
-		GuideResource guideResource = this.guideAssembler.toResource(repository);
-		if (guideResource.getType().equals(GuideType.UNKNOWN)) {
-			return ResponseEntity.notFound().build();
+		// TODO Don't control by exception
+		Repository repository;
+		GuideResource guideResource;
+		try {
+			repository = this.githubClient.fetchOrgRepository(properties.getGuides().getOrganization(),
+					guideType.getPrefix() + guide);
+			guideResource = this.guideAssembler.toResource(repository);
+			if (guideResource.getType().equals(GuideType.UNKNOWN)) {
+				return ResponseEntity.notFound().build();
+			}
+		} catch (GithubResourceNotFoundException ex) {
+			// user repo
+			repository = this.githubClient.fetchUserRepository(properties.getGuides().getOwner().getName(),
+					guideType.getPrefix() + guide);
+			guideResource = this.guideAssembler.toResource(repository);
+			if (guideResource.getType().equals(GuideType.UNKNOWN)) {
+				return ResponseEntity.notFound().build();
+			}
 		}
+
 		return ResponseEntity.ok(guideResource);
 	}
 
@@ -85,10 +107,17 @@ public class GuidesController {
 		if (GuideType.UNKNOWN.equals(guideType)) {
 			return ResponseEntity.notFound().build();
 		}
-		GuideContentResource guideContentResource = this.guideRenderer.render(guideType, guide);
+
+		// TODO Don't control by exception
+		GuideContentResource guideContentResource;
+		try {
+			guideContentResource = this.guideRenderer.render(guideType, guide);
+		} catch (GithubResourceNotFoundException ex) {
+			guideContentResource = this.guideRenderer.userGuideRender(guideType, guide);
+		}
+
 		guideContentResource.add(linkTo(methodOn(GuidesController.class).renderGuide(guideType.getSlug(), guide)).withSelfRel());
 		guideContentResource.add(linkTo(methodOn(GuidesController.class).showGuide(guideType.getSlug(), guide)).withRel("guide"));
 		return ResponseEntity.ok(guideContentResource);
 	}
-
 }

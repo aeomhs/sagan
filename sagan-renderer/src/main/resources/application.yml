@@ -12,6 +12,9 @@ sagan:
   renderer:
     guides:
       organization: spring-guides
+      owner:
+        name: ${GITHUB_GUIDES_OWNER_NAME:aeomhs}
+        type: ${GITHUB_GUIDES_OWNER_TYPE:users}
     github:
       # This optional property may be assigned using a "personal access token" created
       # at https://github.com/settings/applications. It is used for accessing GitHub's
