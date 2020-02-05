@@ -5,9 +5,7 @@ import java.util.Arrays;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import sagan.renderer.github.GithubClient;
-import sagan.renderer.github.GithubResourceNotFoundException;
-import sagan.renderer.github.Repository;
+import sagan.renderer.github.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -42,7 +40,10 @@ public class GuidesControllerTests {
 	private GuideRenderer guideRenderer;
 
 	@MockBean
-	private GithubClient githubClient;
+	private OrgGithubClient orgGithubClient;
+
+	@MockBean
+	private UserGithubClient userGithubClient;
 
 	@Test
 	public void fetchAllGuides() throws Exception {
@@ -61,7 +62,7 @@ public class GuidesControllerTests {
 				"https://example.org/spring-guides/gs-securing-web.git",
 				"git://example.org/spring-guides/gs-securing-web.git", null);
 
-		given(this.githubClient.fetchOrgRepositories("spring-guides"))
+		given(this.orgGithubClient.fetchRepositories("spring-guides"))
 				.willReturn(Arrays.asList(restService, securingWeb));
 
 		this.mvc.perform(get("/guides/"))
@@ -87,7 +88,7 @@ public class GuidesControllerTests {
 				"https://example.org/spring-guides/deprecate-gs-device-detection.git",
 				null);
 
-		given(this.githubClient.fetchOrgRepositories("spring-guides"))
+		given(this.orgGithubClient.fetchRepositories("spring-guides"))
 				.willReturn(Arrays.asList(deprecatedGuide));
 
 		this.mvc.perform(get("/guides/"))
@@ -105,7 +106,7 @@ public class GuidesControllerTests {
 				"git@example.org:spring-guides/gs-rest-service.git",
 				"https://example.org/spring-guides/gs-rest-service.git",
 				Arrays.asList("spring-boot", "spring-framework"));
-		given(this.githubClient.fetchOrgRepository("spring-guides", "gs-rest-service"))
+		given(this.orgGithubClient.fetchRepository("spring-guides", "gs-rest-service"))
 				.willReturn(restService);
 
 		this.mvc.perform(get("/guides/getting-started/rest-service"))
@@ -132,7 +133,7 @@ public class GuidesControllerTests {
 				"git@example.org:spring-guides/gs-securing-web.git",
 				"https://example.org/spring-guides/gs-securing-web.git",
 				null);
-		given(this.githubClient.fetchOrgRepository("spring-guides", "gs-rest-service"))
+		given(this.orgGithubClient.fetchRepository("spring-guides", "gs-rest-service"))
 				.willThrow(new GithubResourceNotFoundException("spring-guides", "gs-rest-service",
 						new HttpClientErrorException(HttpStatus.NOT_FOUND)));
 

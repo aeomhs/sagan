@@ -64,9 +64,9 @@ public class RendererProperties {
 
 		public static class Owner {
 
-			private String name;
+			private String name = "";
 
-			private String type;
+			private String type = "users";
 
 			public String getName() { return name; }
 
@@ -76,6 +76,7 @@ public class RendererProperties {
 
 			public void setType(String type) { this.type = type; }
 
+			public String toString() { return "[" + this.type + "]" + this.name; }
 		}
 	}
 }

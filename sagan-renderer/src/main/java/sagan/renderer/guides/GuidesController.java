@@ -4,9 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import sagan.renderer.RendererProperties;
-import sagan.renderer.github.GithubClient;
-import sagan.renderer.github.GithubResourceNotFoundException;
-import sagan.renderer.github.Repository;
+import sagan.renderer.github.*;
 
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resources;
@@ -29,16 +27,19 @@ public class GuidesController {
 
 	private final GuideRenderer guideRenderer;
 
-	private final GithubClient githubClient;
+	private final OrgGithubClient orgGithubClient;
+
+	private final UserGithubClient userGithubClient;
 
 	private final RendererProperties properties;
 
 	private final GuideResourceAssembler guideAssembler = new GuideResourceAssembler();
 
-	public GuidesController(GuideRenderer guideRenderer, GithubClient github,
+	public GuidesController(GuideRenderer guideRenderer, OrgGithubClient orgGithub, UserGithubClient userGithub,
 			RendererProperties properties) {
 		this.guideRenderer = guideRenderer;
-		this.githubClient = github;
+		this.orgGithubClient = orgGithub;
+		this.userGithubClient = userGithub;
 		this.properties = properties;
 	}
 
@@ -49,17 +50,11 @@ public class GuidesController {
 
 	@GetMapping("/")
 	public Resources<GuideResource> listGuides() {
-		// org repo
-		List<GuideResource> guideResources = this.guideAssembler
-				.toResources(this.githubClient.fetchOrgRepositories(properties.getGuides().getOrganization()))
-				.stream().filter(guide -> !guide.getType().equals(GuideType.UNKNOWN))
-				.collect(Collectors.toList());
-		// TODO Refactoring duplicate code & null check
-		// user repo
-		List<GuideResource> userGuideResources = this.guideAssembler
-				.toResources(this.githubClient.fetchUsersRepositories(properties.getGuides().getOwner().getType(), properties.getGuides().getOwner().getName()))
-				.stream().filter(guide -> !guide.getType().equals(GuideType.UNKNOWN))
-				.collect(Collectors.toList());
+		List<GuideResource> guideResources =
+				getGuideResourceListByRepoOwner(orgGithubClient, properties.getGuides().getOrganization());
+
+		List<GuideResource> userGuideResources =
+				getGuideResourceListByRepoOwner(userGithubClient, properties.getGuides().getOwner().getName());
 		guideResources.addAll(userGuideResources);
 
 		Resources<GuideResource> resources = new Resources<>(guideResources);
@@ -72,6 +67,13 @@ public class GuidesController {
 		return resources;
 	}
 
+	private List<GuideResource> getGuideResourceListByRepoOwner(GithubClient client, String repositoryOwner) {
+		return this.guideAssembler
+				.toResources(client.fetchRepositories(repositoryOwner))
+				.stream().filter(guide -> !guide.getType().equals(GuideType.UNKNOWN))
+				.collect(Collectors.toList());
+	}
+
 	@GetMapping("/{type}/{guide}")
 	public ResponseEntity<GuideResource> showGuide(@PathVariable String type, @PathVariable String guide) {
 		GuideType guideType = GuideType.fromSlug(type);
@@ -82,20 +84,17 @@ public class GuidesController {
 		Repository repository;
 		GuideResource guideResource;
 		try {
-			repository = this.githubClient.fetchOrgRepository(properties.getGuides().getOrganization(),
+			repository = this.orgGithubClient.fetchRepository(properties.getGuides().getOrganization(),
 					guideType.getPrefix() + guide);
-			guideResource = this.guideAssembler.toResource(repository);
-			if (guideResource.getType().equals(GuideType.UNKNOWN)) {
-				return ResponseEntity.notFound().build();
-			}
 		} catch (GithubResourceNotFoundException ex) {
 			// user repo
-			repository = this.githubClient.fetchUserRepository(properties.getGuides().getOwner().getName(),
+			repository = this.userGithubClient.fetchRepository(properties.getGuides().getOwner().getName(),
 					guideType.getPrefix() + guide);
-			guideResource = this.guideAssembler.toResource(repository);
-			if (guideResource.getType().equals(GuideType.UNKNOWN)) {
-				return ResponseEntity.notFound().build();
-			}
+		}
+
+		guideResource = this.guideAssembler.toResource(repository);
+		if (guideResource.getType().equals(GuideType.UNKNOWN)) {
+			return ResponseEntity.notFound().build();
 		}
 
 		return ResponseEntity.ok(guideResource);
@@ -108,14 +107,7 @@ public class GuidesController {
 			return ResponseEntity.notFound().build();
 		}
 
-		// TODO Don't control by exception
-		GuideContentResource guideContentResource;
-		try {
-			guideContentResource = this.guideRenderer.render(guideType, guide);
-		} catch (GithubResourceNotFoundException ex) {
-			guideContentResource = this.guideRenderer.userGuideRender(guideType, guide);
-		}
-
+		GuideContentResource guideContentResource = this.guideRenderer.render(guideType, guide);
 		guideContentResource.add(linkTo(methodOn(GuidesController.class).renderGuide(guideType.getSlug(), guide)).withSelfRel());
 		guideContentResource.add(linkTo(methodOn(GuidesController.class).showGuide(guideType.getSlug(), guide)).withRel("guide"));
 		return ResponseEntity.ok(guideContentResource);

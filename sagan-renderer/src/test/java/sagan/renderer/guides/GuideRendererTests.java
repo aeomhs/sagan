@@ -7,7 +7,8 @@ import org.asciidoctor.Asciidoctor;
 import org.junit.Before;
 import org.junit.Test;
 import sagan.renderer.RendererProperties;
-import sagan.renderer.github.GithubClient;
+import sagan.renderer.github.OrgGithubClient;
+import sagan.renderer.github.UserGithubClient;
 import sagan.renderer.guides.content.AsciidoctorGuideContentContributor;
 import sagan.renderer.guides.content.ImagesGuideContentContributor;
 import sagan.renderer.guides.content.PwsGuideContentContributor;
@@ -23,22 +24,24 @@ public class GuideRendererTests {
 
 	private GuideRenderer renderer;
 
-	private GithubClient githubClient;
+	private OrgGithubClient orgGithubClient;
+	private UserGithubClient userGithubClient;
 
 	private RendererProperties properties;
 
 	@Before
 	public void setup() {
 		this.properties = new RendererProperties();
-		this.githubClient = mock(GithubClient.class);
-		this.renderer = new GuideRenderer(this.githubClient, this.properties,
+		this.orgGithubClient = mock(OrgGithubClient.class);
+		this.renderer = new GuideRenderer(this.orgGithubClient,
+				this.userGithubClient, this.properties,
 				Arrays.asList(new AsciidoctorGuideContentContributor(Asciidoctor.Factory.create()),
 						new ImagesGuideContentContributor(), new PwsGuideContentContributor()));
 	}
 
 	@Test
 	public void renderAsciidoctorContent() throws Exception {
-		given(this.githubClient.downloadRepositoryAsZipball("spring-guides", "gs-sample"))
+		given(this.orgGithubClient.downloadRepositoryAsZipball("spring-guides", "gs-sample"))
 				.willReturn(readAsBytes("gs-sample.zip"));
 		GuideContentResource result = this.renderer.render(GuideType.GETTING_STARTED, "sample");
 		assertThat(result.getName()).isEqualTo("sample");
@@ -49,7 +52,7 @@ public class GuideRendererTests {
 
 	@Test
 	public void renderImages() throws Exception {
-		given(this.githubClient.downloadRepositoryAsZipball("spring-guides", "gs-sample"))
+		given(this.orgGithubClient.downloadRepositoryAsZipball("spring-guides", "gs-sample"))
 				.willReturn(readAsBytes("gs-sample.zip"));
 		GuideContentResource result = this.renderer.render(GuideType.GETTING_STARTED, "sample");
 		assertThat(result.getName()).isEqualTo("sample");
@@ -66,7 +69,7 @@ public class GuideRendererTests {
 
 	@Test
 	public void renderSampleGuideWithPwsMetadata() throws Exception {
-		given(this.githubClient.downloadRepositoryAsZipball("spring-guides", "gs-sample"))
+		given(this.orgGithubClient.downloadRepositoryAsZipball("spring-guides", "gs-sample"))
 				.willReturn(readAsBytes("gs-sample-pws.zip"));
 		GuideContentResource result = this.renderer.render(GuideType.GETTING_STARTED, "sample");
 		assertThat(result.getName()).isEqualTo("sample");

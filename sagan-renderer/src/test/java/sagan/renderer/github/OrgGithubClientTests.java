@@ -24,19 +24,19 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 /**
- * Tests for {@link GithubClient}
+ * Tests for {@link OrgGithubClient}
  */
 @RunWith(SpringRunner.class)
-@RestClientTest({GithubClient.class, RendererProperties.class})
+@RestClientTest({OrgGithubClient.class, RendererProperties.class})
 @TestPropertySource(properties = "sagan.renderer.github.token=testtoken")
-public class GithubClientTests {
+public class OrgGithubClientTests {
 
 	private static final MediaType GITHUB_PREVIEW = MediaType.parseMediaType("application/vnd.github.mercy-preview+json");
 
 	private static final MediaType APPLICATION_ZIP = MediaType.parseMediaType("application/zip");
 
 	@Autowired
-	private GithubClient client;
+	private OrgGithubClient client;
 
 	@Autowired
 	private MockRestServiceServer server;
@@ -51,7 +51,7 @@ public class GithubClientTests {
 				.andExpect(header(HttpHeaders.AUTHORIZATION, authorization))
 				.andExpect(header(HttpHeaders.ACCEPT, GITHUB_PREVIEW.toString()))
 				.andRespond(withSuccess(getClassPathResource("gs-rest-service.json"), GITHUB_PREVIEW));
-		Repository repository = this.client.fetchOrgRepository(org, repo);
+		Repository repository = this.client.fetchRepository(org, repo);
 		assertThat(repository).extracting("name").containsOnly("gs-rest-service");
 	}
 
@@ -89,7 +89,7 @@ public class GithubClientTests {
 				.andRespond(withSuccess(getClassPathResource("spring-guides-repos-page2.json"),
 						MediaType.APPLICATION_JSON));
 
-		List<Repository> repositories = this.client.fetchOrgRepositories(org);
+		List<Repository> repositories = this.client.fetchRepositories(org);
 		assertThat(repositories).hasSize(5)
 				.extracting("name")
 				.containsExactlyInAnyOrder("gs-rest-service","gs-scheduling-tasks",
