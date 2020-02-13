@@ -31,7 +31,7 @@ public class Topicals extends AbstractGuidesRepository<Topical> {
 
 	@Autowired
 	public Topicals(SaganRendererClient client) {
-		super(client, GuideType.TUTORIAL);
+		super(client, GuideType.TOPICAL);
 	}
 
 	@Override

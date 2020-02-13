@@ -29,7 +29,7 @@ public class Tutorials extends AbstractGuidesRepository<Tutorial> {
 	public static final Class<?> CACHE_TUTORIAL_TYPE = Tutorial.class;
 
 	public Tutorials(SaganRendererClient client) {
-		super(client, GuideType.TOPICAL);
+		super(client, GuideType.TUTORIAL);
 	}
 
 	@Override
