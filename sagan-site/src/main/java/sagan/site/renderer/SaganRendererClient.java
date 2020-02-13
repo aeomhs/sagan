@@ -45,59 +45,21 @@ public class SaganRendererClient {
 				.toArray(new GuideMetadata[]{});
 	}
 
-	public GuideMetadata[] fetchGettingStartedGuides() {
+	public GuideMetadata[] fetchGuides(GuideType guideType) {
 		return Arrays.stream(fetchAllGuides())
-				.filter(guide -> GuideType.GETTING_STARTED.equals(guide.getType()))
+				.filter(guide -> guideType.equals(guide.getType()))
 				.toArray(GuideMetadata[]::new);
 	}
 
-	public GuideMetadata fetchGettingStartedGuide(String name) {
+	public GuideMetadata fetchGuide(GuideType guideType, String name) {
 		return this.traverson.follow("guides")
-				.follow(Hop.rel("getting-started").withParameter("guide", name))
+				.follow(Hop.rel(guideType.getName()).withParameter("guide", name))
 				.toObject(GuideMetadata.class);
 	}
 
-	public GuideContent fetchGettingStartedGuideContent(String name) {
+	public GuideContent fetchGuideContent(GuideType guideType, String name) {
 		return this.traverson.follow("guides")
-				.follow(Hop.rel("getting-started").withParameter("guide", name))
-				.follow("content")
-				.toObject(GuideContent.class);
-	}
-
-	public GuideMetadata[] fetchTutorialGuides() {
-		return Arrays.stream(fetchAllGuides())
-				.filter(guide -> GuideType.TUTORIAL.equals(guide.getType()))
-				.toArray(GuideMetadata[]::new);
-	}
-
-	public GuideMetadata fetchTutorialGuide(String name) {
-		return this.traverson.follow("guides")
-				.follow(Hop.rel("tutorial").withParameter("guide", name))
-				.toObject(GuideMetadata.class);
-	}
-
-	public GuideContent fetchTutorialGuideContent(String name) {
-		return this.traverson.follow("guides")
-				.follow(Hop.rel("tutorial").withParameter("guide", name))
-				.follow("content")
-				.toObject(GuideContent.class);
-	}
-
-	public GuideMetadata[] fetchTopicalGuides() {
-		return Arrays.stream(fetchAllGuides())
-				.filter(guide -> GuideType.TOPICAL.equals(guide.getType()))
-				.toArray(GuideMetadata[]::new);
-	}
-
-	public GuideMetadata fetchTopicalGuide(String name) {
-		return this.traverson.follow("guides")
-				.follow(Hop.rel("topical").withParameter("guide", name))
-				.toObject(GuideMetadata.class);
-	}
-
-	public GuideContent fetchTopicalGuideContent(String name) {
-		return this.traverson.follow("guides")
-				.follow(Hop.rel("topical").withParameter("guide", name))
+				.follow(Hop.rel(guideType.getName()).withParameter("guide", name))
 				.follow("content")
 				.toObject(GuideContent.class);
 	}

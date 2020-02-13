@@ -1,12 +1,11 @@
 package sagan.site.guides;
 
-import java.util.Arrays;
 import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sagan.projects.Project;
-import sagan.site.renderer.GuideContent;
+import sagan.site.renderer.GuideType;
 import sagan.site.renderer.SaganRendererClient;
 
 import org.springframework.cache.annotation.CacheEvict;
@@ -17,7 +16,7 @@ import org.springframework.stereotype.Component;
  * Repository implementation providing data access services for tutorial guides.
  */
 @Component
-public class Tutorials implements GuidesRepository<Tutorial> {
+public class Tutorials extends AbstractGuidesRepository<Tutorial> {
 
 	private static Logger logger = LoggerFactory.getLogger(Tutorials.class);
 
@@ -29,40 +28,31 @@ public class Tutorials implements GuidesRepository<Tutorial> {
 
 	public static final Class<?> CACHE_TUTORIAL_TYPE = Tutorial.class;
 
-	private final SaganRendererClient client;
-
 	public Tutorials(SaganRendererClient client) {
-		this.client = client;
+		super(client, GuideType.TOPICAL);
 	}
 
 	@Override
 	@Cacheable(CACHE_TUTORIALS)
 	public GuideHeader[] findAll() {
-		return Arrays.stream(this.client.fetchTutorialGuides())
-				.map(DefaultGuideHeader::new)
-				.toArray(DefaultGuideHeader[]::new);
+		return super.findAll();
 	}
 
 	@Override
 	@Cacheable(cacheNames = CACHE_TUTORIALS, key="#project.id")
 	public GuideHeader[] findByProject(Project project) {
-		return Arrays.stream(findAll())
-				.filter(guide -> guide.getProjects().contains(project.getId()))
-				.toArray(GuideHeader[]::new);
+		return super.findByProject(project);
 	}
 
 	@Override
 	public Optional<GuideHeader> findGuideHeaderByName(String name) {
-		DefaultGuideHeader guideHeader = new DefaultGuideHeader(this.client.fetchTutorialGuide(name));
-		return Optional.of(guideHeader);
+		return super.findGuideHeaderByName(name);
 	}
 
 	@Override
 	@Cacheable(CACHE_TUTORIAL)
 	public Optional<Tutorial> findByName(String name) {
-		DefaultGuideHeader guideHeader = new DefaultGuideHeader(this.client.fetchTutorialGuide(name));
-		GuideContent guideContent = this.client.fetchTutorialGuideContent(name);
-		return Optional.of(new Tutorial(guideHeader, guideContent));
+		return super.findByName(name);
 	}
 
 	@CacheEvict(CACHE_TUTORIALS)
