@@ -51,15 +51,15 @@ class GuideRenderer {
 		File unzippedRoot = null;
 		File zipball = null;
 		try {
-			// TODO Don't control by exception
-			// if download from orgs repo was failed, try get from users repo again.
 			byte[] download;
-			try {
-				download = this.orgGithubClient.downloadRepositoryAsZipball(org, repositoryName);
-			} catch (GithubResourceNotFoundException cannotFoundResourceFromOrg) {
+
+			if (GuideType.TRANSLATED.equals(type)) {
 				String userName = this.properties.getGuides().getOwner().getName();
 				download = this.userGithubClient.downloadRepositoryAsZipball(userName, repositoryName);
+			} else {
+				download = this.orgGithubClient.downloadRepositoryAsZipball(org, repositoryName);
 			}
+
 			// First, write the downloaded stream of bytes into a file
 			zipball = File.createTempFile(tempFilePrefix, ".zip");
 			zipball.deleteOnExit();

@@ -80,19 +80,17 @@ public class GuidesController {
 		if (GuideType.UNKNOWN.equals(guideType)) {
 			return ResponseEntity.notFound().build();
 		}
-		// TODO Don't control by exception
+
 		Repository repository;
-		GuideResource guideResource;
-		try {
-			repository = this.orgGithubClient.fetchRepository(properties.getGuides().getOrganization(),
-					guideType.getPrefix() + guide);
-		} catch (GithubResourceNotFoundException ex) {
-			// user repo
+		if (GuideType.TRANSLATED.equals(guideType)) {
 			repository = this.userGithubClient.fetchRepository(properties.getGuides().getOwner().getName(),
+					guideType.getPrefix() + guide);
+		} else {
+			repository = this.orgGithubClient.fetchRepository(properties.getGuides().getOrganization(),
 					guideType.getPrefix() + guide);
 		}
 
-		guideResource = this.guideAssembler.toResource(repository);
+		GuideResource guideResource = this.guideAssembler.toResource(repository);
 		if (guideResource.getType().equals(GuideType.UNKNOWN)) {
 			return ResponseEntity.notFound().build();
 		}
