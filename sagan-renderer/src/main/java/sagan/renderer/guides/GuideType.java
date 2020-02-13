@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 enum GuideType {
 
 	GETTING_STARTED("getting-started", "gs-"), TUTORIAL("tutorial", "tut-"),
+	TRANSLATED("translated", "tl-"),
 	TOPICAL("topical", "top-"), UNKNOWN("unknown", "");
 
 	private final String slug;

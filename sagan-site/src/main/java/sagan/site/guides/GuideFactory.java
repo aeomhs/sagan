@@ -13,6 +13,8 @@ public class GuideFactory<T extends Guide> {
                 return createTutorial(header, content);
             case TOPICAL:
                 return createTopical(header, content);
+            case TRANSLATED:
+                return createTranslated(header, content);
         }
         throw new RuntimeException(String.format("Cannot create Guide instance of %s", guideType));
     }
@@ -27,5 +29,9 @@ public class GuideFactory<T extends Guide> {
 
     private static Guide createTopical(GuideHeader header, GuideContent content) {
         return new Topical(header, content);
+    }
+
+    private static Guide createTranslated(GuideHeader header, GuideContent content) {
+        return new TranslatedGuide(header, content);
     }
 }

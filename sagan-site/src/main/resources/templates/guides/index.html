@@ -41,6 +41,20 @@
             </div>
           </div>
         </section>
+        <section class="content-container--body">
+          <div data-filterable-container>
+            <div class="content-section-title--container">
+              <div class="pull-left icon icon-gs-guides"></div>
+              <h3 class="content-section-title no-border no-margin">(Translated) Getting Started Guides</h3>
+              <p class="content-section-sub-title">아래 가이드는 기존의 가이드를 번역한 문서입니다.</p>
+            </div>
+
+            <div th:each="translated : ${translateds}" class="guide--container" th:attr="data-filterable=${translated.title}+' '+${translated.description}+' '+${translated.projects}">
+              <a class="guide--title" th:href="@{'/guides/tl/'+${translated.name}+'/'}" th:text="${translated.title}"></a>
+              <p class="guide--subtitle" th:text="${translated.description}"></p>
+            </div>
+          </div>
+        </section>
         <section class="content-container--body" th:if="${not topicals.empty}">
           <div data-filterable-container>
             <div class="content-section-title--container">

@@ -1,6 +1,8 @@
 package sagan.site.guides;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import sagan.support.nav.Navigation;
 import sagan.support.nav.Section;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping;
  * @see GettingStartedGuideController
  * @see TutorialController
  * @see TopicalController
+ * @see TranslatedGuideController
  */
 @Controller
 @Navigation(Section.GUIDES)
@@ -27,11 +30,14 @@ class GuideIndexController {
 
 	private final Topicals topicals;
 
+	private final TranslatedGuides translatedGuides;
+
 	@Autowired
-	public GuideIndexController(GettingStartedGuides gsGuides, Tutorials tutorials, Topicals topicals) {
+	public GuideIndexController(GettingStartedGuides gsGuides, Tutorials tutorials, Topicals topicals, TranslatedGuides translatedGuides) {
 		this.gsGuides = gsGuides;
 		this.tutorials = tutorials;
 		this.topicals = topicals;
+		this.translatedGuides = translatedGuides;
 	}
 
 	@GetMapping("/guides")
@@ -39,6 +45,7 @@ class GuideIndexController {
 		model.addAttribute("guides", Arrays.asList(gsGuides.findAll()));
 		model.addAttribute("tutorials", Arrays.asList(tutorials.findAll()));
 		model.addAttribute("topicals", Arrays.asList(topicals.findAll()));
+		model.addAttribute("translateds", translatedGuides.findAll());
 		return "guides/index";
 	}
 }

@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import sagan.site.guides.GettingStartedGuides;
 import sagan.site.guides.Topicals;
+import sagan.site.guides.TranslatedGuides;
 import sagan.site.guides.Tutorials;
 import sagan.support.cache.CachedRestClient;
 import sagan.support.cache.JsonRedisTemplate;
@@ -34,7 +35,8 @@ class StandaloneCacheConfig {
 				Arrays.asList(CachedRestClient.CACHE_NAME,
 						GettingStartedGuides.CACHE_GUIDE, GettingStartedGuides.CACHE_GUIDES,
 						Tutorials.CACHE_TUTORIAL, Tutorials.CACHE_TUTORIALS,
-						Topicals.CACHE_TOPICAL, Topicals.CACHE_TOPICALS).stream()
+						Topicals.CACHE_TOPICAL, Topicals.CACHE_TOPICALS,
+						TranslatedGuides.CACHE_TRANSLATED, TranslatedGuides.CACHE_TRANSLATEDS).stream()
 						.map(name -> new ConcurrentMapCache(name))
 						.collect(Collectors.toList()));
 		return cacheManager;
@@ -88,6 +90,16 @@ class CloudFoundryCacheConfig extends AbstractCloudConfig {
 				Topicals.CACHE_TOPICALS_TYPE);
 		cacheManager.withCache(Topicals.CACHE_TOPICALS, topicalsTemplate,
 				properties.getCache().getListTimeToLive());
+
+		JsonRedisTemplate translatedTemplate = new JsonRedisTemplate<>(redisConnectionFactory, objectMapper,
+				TranslatedGuides.CACHE_TRANSLATED_TYPE);
+		cacheManager.withCache(TranslatedGuides.CACHE_TRANSLATED, translatedTemplate,
+				properties.getCache().getContentTimeToLive());
+
+		JsonRedisTemplate translatedsTemplate = new JsonRedisTemplate<>(redisConnectionFactory, objectMapper,
+				TranslatedGuides.CACHE_TRANSLATEDS_TYPE);
+		cacheManager.withCache(TranslatedGuides.CACHE_TRANSLATEDS, translatedsTemplate,
+				properties.getCache().getContentTimeToLive());
 
 		return cacheManager;
 	}

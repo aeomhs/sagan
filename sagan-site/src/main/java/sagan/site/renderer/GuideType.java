@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 public enum GuideType {
 
 	GETTING_STARTED("getting-started"), TUTORIAL("tutorial"),
+	TRANSLATED("translated"),
 	TOPICAL("topical"), UNKNOWN("unknown");
 
 	private final String name;
