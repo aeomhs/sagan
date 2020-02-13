@@ -1,12 +1,11 @@
 package sagan.site.guides;
 
-import java.util.Arrays;
 import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sagan.projects.Project;
-import sagan.site.renderer.GuideContent;
+import sagan.site.renderer.GuideType;
 import sagan.site.renderer.SaganRendererClient;
 
 import org.springframework.cache.annotation.CacheEvict;
@@ -17,7 +16,7 @@ import org.springframework.stereotype.Component;
  * Repository implementation providing data access services for getting started guides.
  */
 @Component
-public class GettingStartedGuides implements GuidesRepository<GettingStartedGuide> {
+public class GettingStartedGuides extends AbstractGuidesRepository<GettingStartedGuide> {
 
 	private static Logger logger = LoggerFactory.getLogger(GettingStartedGuides.class);
 
@@ -29,40 +28,31 @@ public class GettingStartedGuides implements GuidesRepository<GettingStartedGuid
 
 	public static final Class<?> CACHE_GUIDE_TYPE = GettingStartedGuide.class;
 
-	private final SaganRendererClient client;
-
 	public GettingStartedGuides(SaganRendererClient client) {
-		this.client = client;
+		super(client, GuideType.GETTING_STARTED);
 	}
 
 	@Override
 	@Cacheable(CACHE_GUIDES)
 	public GuideHeader[] findAll() {
-		return Arrays.stream(this.client.fetchGettingStartedGuides())
-				.map(DefaultGuideHeader::new)
-				.toArray(DefaultGuideHeader[]::new);
+		return super.findAll();
 	}
 
 	@Override
 	@Cacheable(cacheNames = CACHE_GUIDES, key="#project.id")
 	public GuideHeader[] findByProject(Project project) {
-		return Arrays.stream(findAll())
-				.filter(guide -> guide.getProjects().contains(project.getId()))
-				.toArray(GuideHeader[]::new);
+		return super.findByProject(project);
 	}
 
 	@Override
 	public Optional<GuideHeader> findGuideHeaderByName(String name) {
-		DefaultGuideHeader guideHeader = new DefaultGuideHeader(this.client.fetchGettingStartedGuide(name));
-		return Optional.of(guideHeader);
+		return super.findGuideHeaderByName(name);
 	}
 
 	@Override
 	@Cacheable(CACHE_GUIDE)
 	public Optional<GettingStartedGuide> findByName(String name) {
-		DefaultGuideHeader guideHeader = new DefaultGuideHeader(this.client.fetchGettingStartedGuide(name));
-		GuideContent guideContent = this.client.fetchGettingStartedGuideContent(name);
-		return Optional.of(new GettingStartedGuide(guideHeader, guideContent));
+		return super.findByName(name);
 	}
 
 	@CacheEvict(CACHE_GUIDES)
