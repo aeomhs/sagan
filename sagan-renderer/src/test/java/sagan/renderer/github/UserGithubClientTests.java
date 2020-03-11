@@ -1,0 +1,104 @@
+package sagan.renderer.github;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.util.StreamUtils;
+import sagan.renderer.RendererProperties;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+
+/**
+ * Tests for {@link OrgGithubClient}
+ */
+@RunWith(SpringRunner.class)
+@RestClientTest({UserGithubClient.class, RendererProperties.class})
+@TestPropertySource(properties = "sagan.renderer.github.token=testtoken")
+public class UserGithubClientTests {
+
+	private static final MediaType GITHUB_PREVIEW = MediaType.parseMediaType("application/vnd.github.mercy-preview+json");
+
+	private static final MediaType APPLICATION_ZIP = MediaType.parseMediaType("application/zip");
+
+	@Autowired
+	private UserGithubClient client;
+
+	@Autowired
+	private MockRestServiceServer server;
+
+	@Test
+	public void downloadRepositoryInfo() {
+		String userName = "aeomhs";
+		String repo = "gs-rest-service";
+		String expectedUrl = String.format("/repos/%s/%s", userName, repo);
+		String authorization = getAuthorizationHeader();
+		this.server.expect(requestTo(expectedUrl))
+				.andExpect(header(HttpHeaders.AUTHORIZATION, authorization))
+				.andExpect(header(HttpHeaders.ACCEPT, GITHUB_PREVIEW.toString()))
+				.andRespond(withSuccess(getClassPathResource("user-gs-rest-service.json"), GITHUB_PREVIEW));
+		Repository repository = this.client.fetchRepository(userName, repo);
+		assertThat(repository).extracting("name").containsOnly("gs-tl-rest-service");
+	}
+
+	@Test
+	public void downloadRepositoryAsZipBall() throws Exception {
+		String userName = "aeomhs";
+		String repo = "gs-rest-service";
+		String expectedUrl = String.format("/repos/%s/%s/zipball", userName, repo);
+		String authorization = getAuthorizationHeader();
+		this.server.expect(requestTo(expectedUrl))
+				.andExpect(header(HttpHeaders.AUTHORIZATION, authorization))
+				.andExpect(header(HttpHeaders.ACCEPT, GITHUB_PREVIEW.toString()))
+				.andRespond(withSuccess(getClassPathResource("user-gs-rest-service.zip"), APPLICATION_ZIP));
+		byte[] result = this.client.downloadRepositoryAsZipball(userName, repo);
+		ClassPathResource resource = getClassPathResource("user-gs-rest-service.zip");
+		assertThat(result).isEqualTo(StreamUtils.copyToByteArray(resource.getInputStream()));
+	}
+
+	@Test
+	public void fetchRepositoriesMultiplePages() {
+		String userName = "aeomhs";
+		String authorization = getAuthorizationHeader();
+		HttpHeaders firstPageHeaders = new HttpHeaders();
+		firstPageHeaders.add("Link",
+				"<https://api.github.com/users/aeomhs/repos?per_page=100&page=2>; rel=\"next\"," +
+						" <https://api.github.com/users/aeomhs/repos?per_page=100&page=2>; rel=\"last\"");
+		this.server.expect(requestTo("/users/aeomhs/repos?per_page=100"))
+				.andExpect(header(HttpHeaders.AUTHORIZATION, authorization))
+				.andExpect(header(HttpHeaders.ACCEPT, GITHUB_PREVIEW.toString()))
+				.andRespond(withSuccess(getClassPathResource("user-repos-page1.json"),
+						MediaType.APPLICATION_JSON).headers(firstPageHeaders));
+		this.server.expect(requestTo("/users/aeomhs/repos?per_page=100&page=2"))
+				.andExpect(header(HttpHeaders.AUTHORIZATION, authorization))
+				.andExpect(header(HttpHeaders.ACCEPT, GITHUB_PREVIEW.toString()))
+				.andRespond(withSuccess(getClassPathResource("user-repos-page2.json"),
+						MediaType.APPLICATION_JSON));
+
+		List<Repository> repositories = this.client.fetchRepositories(userName);
+		assertThat(repositories).hasSize(5)
+				.extracting("name")
+				.containsExactlyInAnyOrder("gs-react-and-spring-data-rest","gs-tl-rest-service",
+						"sagan", "tl-local-env-test", "tl-testing-web");
+
+	}
+
+	private String getAuthorizationHeader() {
+		return "Token testtoken";
+	}
+
+	private ClassPathResource getClassPathResource(String path) {
+		return new ClassPathResource(path, getClass());
+	}
+}

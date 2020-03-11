@@ -166,6 +166,69 @@ public class GuidesControllerTests {
 				.andExpect(MockMvcResultMatchers.status().isNotFound());
 	}
 
+	@Test
+	public void fetchAllGuidesFromUserRepositories() throws Exception {
+		Repository restService = new Repository(12L, "gs-rest-service",
+				"aeomhs/gs-rest-service",
+				"REST service sample :: Building a REST service",
+				"http://example.org/spring-guides/gs-rest-service",
+				"git://example.org/spring-guides/gs-rest-service.git",
+				"git@example.org:spring-guides/gs-rest-service.git",
+				"https://example.org/spring-guides/gs-rest-service.git",
+				Arrays.asList("spring-boot", "spring-framework"));
+		Repository securingWeb = new Repository(15L, "gs-securing-web",
+				"aeomhs/gs-securing-web", "Securing Web :: Securing a Web Application",
+				"http://example.org/spring-guides/gs-securing-web",
+				"git@example.org:spring-guides/gs-securing-web.git",
+				"https://example.org/spring-guides/gs-securing-web.git",
+				"git://example.org/spring-guides/gs-securing-web.git", null);
+
+		given(this.userGithubClient.fetchRepositories("aeomhs"))
+				.willReturn(Arrays.asList(restService, securingWeb));
+
+		this.mvc.perform(get("/guides/"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$._embedded.guides[0].name").value("rest-service"))
+				.andExpect(jsonPath("$._embedded.guides[0].projects[0]").value("spring-boot"))
+				.andExpect(hasLink("$._embedded.guides[0]._links", "self",
+						"http://localhost/guides/getting-started/rest-service"))
+				.andExpect(jsonPath("$._embedded.guides[1].name").value("securing-web"))
+				.andExpect(jsonPath("$._embedded.guides[1].projects").isEmpty())
+				.andExpect(hasLink("$._embedded.guides[1]._links", "self",
+						"http://localhost/guides/getting-started/securing-web"));
+	}
+
+	@Test
+	public void fetchGuideFromUserRepositories() throws Exception {
+		Repository restService = new Repository(12L, "gs-rest-service",
+				"aeomhs/gs-rest-service",
+				"REST service sample :: Building a REST service :: spring-boot,spring-framework",
+				"http://example.org/aeomhs/gs-rest-service",
+				"git://example.org/aeomhs/gs-rest-service.git",
+				"git@example.org:aeomhs/gs-rest-service.git",
+				"https://example.org/aeomhs/gs-rest-service.git",
+				Arrays.asList("spring-boot", "spring-framework"));
+
+		given(this.orgGithubClient.fetchRepository("spring-guides", "gs-rest-service"))
+				.willThrow(new GithubResourceNotFoundException("spring-guides", "gs-rest-service", new HttpClientErrorException(HttpStatus.NOT_FOUND)));
+		given(this.userGithubClient.fetchRepository("aeomhs", "gs-rest-service"))
+				.willReturn(restService);
+
+		this.mvc.perform(get("/guides/getting-started/rest-service"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.name").value("rest-service"))
+				.andExpect(jsonPath("$.repositoryName").value("aeomhs/gs-rest-service"))
+				.andExpect(jsonPath("$.title").value("REST service sample"))
+				.andExpect(jsonPath("$.description").value("Building a REST service"))
+				.andExpect(jsonPath("$.type").value("getting-started"))
+				.andExpect(jsonPath("$.githubUrl").value("http://example.org/aeomhs/gs-rest-service"))
+				.andExpect(jsonPath("$.gitUrl").value("git://example.org/aeomhs/gs-rest-service.git"))
+				.andExpect(jsonPath("$.sshUrl").value("git@example.org:aeomhs/gs-rest-service.git"))
+				.andExpect(jsonPath("$.cloneUrl").value("https://example.org/aeomhs/gs-rest-service.git"))
+				.andExpect(jsonPath("$.projects[0]").value("spring-boot"))
+				.andExpect(hasLink("self", "http://localhost/guides/getting-started/rest-service"));
+	}
+
 	static LinksMatcher hasLink(String name, String href) {
 		return new LinksMatcher(name, href);
 	}
